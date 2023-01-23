@@ -1,3 +1,5 @@
+# Enable postponed evaluation of annotations
+from __future__ import annotations
 import numpy as np
 from ...geom import trans_sphere_to_cart
 from .geom import (
@@ -11,6 +13,18 @@ from .base import HexMesh
 def cube(length : float = 1.0) -> HexMesh:
   """Factory method to create the volume of a cube
 
+  Parameters
+  ----------
+  length :
+    Length of sides
+
+  Returns
+  -------
+  mesh :
+
+  Notes
+  -----
+
   .. figure:: ../img/Mesh_Cube.png
     :width: 90%
     :align: center
@@ -23,10 +37,6 @@ def cube(length : float = 1.0) -> HexMesh:
 
     Volume Cube.
 
-  Parameters
-  ----------
-  length :
-    Length of sides
   """
 
   half = 0.5*length
@@ -46,8 +56,25 @@ def cube(length : float = 1.0) -> HexMesh:
     cells = cells )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def spherical_cube_shell(r1 : float = 0.5, r2 : float = 1.0) -> HexMesh:
+def spherical_cube_shell(
+  r1 : float = 0.5,
+  r2 : float = 1.0) \
+  -> HexMesh[HexCartesianSpherical]:
   """Factory method to create the volume of a spherical shell
+
+  Parameters
+  ----------
+  r1 :
+    Inner radius
+  r2 :
+    Outer radius
+
+  Returns
+  -------
+  mesh :
+
+  Notes
+  -----
 
   .. figure:: ../img/mesh_spherical_cube_shell.png
     :width: 90%
@@ -60,13 +87,6 @@ def spherical_cube_shell(r1 : float = 0.5, r2 : float = 1.0) -> HexMesh:
     :align: center
 
     Spherical Cube Shell.
-
-  Parameters
-  ----------
-  r1 :
-    Inner radius
-  r2 :
-    Outer radius
   """
 
   # half-length of cube edges for distance (radius) to the vertices
@@ -113,8 +133,25 @@ def spherical_cube_shell(r1 : float = 0.5, r2 : float = 1.0) -> HexMesh:
     geoms = HexCartesianSpherical())
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def spherical_cube(r1 : float = 0.5, r2 : float = 1.0) -> HexMesh:
+def spherical_cube(
+  r1 : float = 0.5,
+  r2 : float = 1.0) \
+  -> HexMesh[HexLinear, HexCartesianSpherical]:
   """Factory method to create the volume of a sphere
+
+  Parameters
+  ----------
+  r1 :
+    Inner radius
+  r2 :
+    Outer radius
+
+  Returns
+  -------
+  mesh :
+
+  Notes
+  -----
 
   .. figure:: ../img/mesh_spherical_cube_shell.png
     :width: 90%
@@ -127,13 +164,6 @@ def spherical_cube(r1 : float = 0.5, r2 : float = 1.0) -> HexMesh:
     :align: center
 
     Spherical Cube Refined.
-
-  Parameters
-  ----------
-  r1 :
-    Inner radius
-  r2 :
-    Outer radius
   """
 
   # half-length of cube edges for distance (radius) to the vertices
@@ -189,7 +219,7 @@ def slab_spherical_cube_hole(
   lz : float = 1.0,
   z : float = 0.25,
   r : float = 0.25 ) \
-  -> HexMesh:
+  -> HexMesh[HexCartesianSpherical, HexLinear]:
   """Factory method to create the volume of slab with spherical hole
 
   Parameters
@@ -200,6 +230,10 @@ def slab_spherical_cube_hole(
     z-offset of hole
   r :
     Radius of hole
+
+  Returns
+  -------
+  mesh :
 
   """
 
@@ -249,7 +283,10 @@ def slab_spherical_cube_hole(
     vert_geom = [0]*8 + [1]*8)
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def icosahedron_spherical_shell(r1 : float = 0.5, r2 : float = 1.0) -> HexMesh:
+def icosahedron_spherical_shell(
+  r1 : float = 0.5,
+  r2 : float = 1.0) \
+  -> HexMesh[HexSpherical]:
   """Factory method to create an icosahedron shell in spherical coordinates
 
   Parameters
@@ -258,6 +295,11 @@ def icosahedron_spherical_shell(r1 : float = 0.5, r2 : float = 1.0) -> HexMesh:
     Inner radius
   r2 :
     Outer radius
+
+  Returns
+  -------
+  mesh :
+
   """
 
   c3 = np.cos(np.pi/3)
@@ -326,8 +368,25 @@ def icosahedron_spherical_shell(r1 : float = 0.5, r2 : float = 1.0) -> HexMesh:
     geoms = HexSpherical() )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def icosahedron_shell(r1 : float = 0.5, r2 : float = 1.0) -> HexMesh:
+def icosahedron_shell(
+  r1 : float = 0.5,
+  r2 : float = 1.0) \
+  -> HexMesh[HexCartesianSpherical]:
   """Factory method to create an icosahedron in cartesian coordinates
+
+  Parameters
+  ----------
+  r1 :
+    Inner radius
+  r2 :
+    Outer radius
+
+  Returns
+  -------
+  mesh :
+
+  Notes
+  -----
 
   .. figure:: ../img/mesh_Icosahedron_Spherical.png
     :width: 90%
@@ -341,12 +400,6 @@ def icosahedron_shell(r1 : float = 0.5, r2 : float = 1.0) -> HexMesh:
 
     Icosahedron Shell.
 
-  Parameters
-  ----------
-  r1 :
-    Inner radius
-  r2 :
-    Outer radius
   """
   mesh = icosahedron_spherical_shell(r1 = r1, r2 = r2)
 

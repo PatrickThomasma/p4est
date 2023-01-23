@@ -1,15 +1,15 @@
 # Enable postponed evaluation of annotations
 from __future__ import annotations
-try:
+from partis.utils import TYPING
+
+if TYPING:
   from typing import (
-    Optional,
     Union,
-    Literal,
-    TypeVar,
-    NewType )
-  from ...typing import N, M, NP, NV, NN, NC
-except:
-  pass
+    Literal )
+  from ...typing import N, NP, M, NV, NN, NE, NC, Where
+  from .typing import (
+    CoordRel,
+    CoordAbs)
 
 from collections import namedtuple
 from collections.abc import (
@@ -20,16 +20,16 @@ import numpy as np
 from mpi4py import MPI
 
 from ...utils import jagged_array
-from ...mesh.hex import HexMesh
 from ...core._info import (
   HexLocalInfo,
   HexGhostInfo )
 from ...core._adapted import HexAdapted
 from ...core._p8est import P8est
+from .base import HexMesh
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 class HexAMR(P8est):
-  r"""Hexahedral adaptive mesh refinement
+  r"""Hexahedral adaptive mesh refinement using p8est
 
   Parameters
   ----------
@@ -45,8 +45,8 @@ class HexAMR(P8est):
   #-----------------------------------------------------------------------------
   def __init__(self,
     mesh : HexMesh,
-    max_level : Optional[int] = None,
-    comm : Optional[MPI.Comm] = None ):
+    max_level : int = None,
+    comm : MPI.Comm = None ):
 
     super().__init__(
       mesh = mesh,
@@ -63,11 +63,15 @@ class HexAMR(P8est):
   #-----------------------------------------------------------------------------
   @property
   def max_level( self ) -> int:
+    """Maximum allowed refinement level
+    """
     return self._max_level
 
   #-----------------------------------------------------------------------------
   @property
   def comm( self ) -> MPI.Comm:
+    """MPI Communicator
+    """
     return self._comm
 
   #-----------------------------------------------------------------------------
@@ -95,20 +99,10 @@ class HexAMR(P8est):
 
   #-----------------------------------------------------------------------------
   def coord(self,
-    offset : np.ndarray[(Union[N,Literal[1]], ..., 3), np.dtype[np.floating]],
-    where : Union[None, slice, np.ndarray[..., np.dtype[Union[np.integer, bool]]]] = None ) \
-    -> np.ndarray[(N, ..., 3), np.dtype[np.floating]]:
+    offset : CoordRel,
+    where : Where = None ) -> CoordAbs:
     r"""
     Transform to (physical/global) coordinates of a point relative to each cell
-
-    .. math::
-
-      \func{\rankone{r}}{\rankone{q}} =
-      \begin{bmatrix}
-        \func{\rankzero{x}}{\rankzero{q}_0, \rankzero{q}_1, \rankzero{q}_2} \\
-        \func{\rankzero{y}}{\rankzero{q}_0, \rankzero{q}_1, \rankzero{q}_2} \\
-        \func{\rankzero{z}}{\rankzero{q}_0, \rankzero{q}_1, \rankzero{q}_2}
-      \end{bmatrix}
 
     Parameters
     ----------
@@ -135,7 +129,8 @@ class HexAMR(P8est):
 
     Returns
     -------
-    ``(refined, coarsened)``
+    refined :
+    coarsened :
     """
 
     return super().adapt()

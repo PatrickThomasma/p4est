@@ -1,28 +1,39 @@
 from typing import (
-  Optional,
   Union,
-  Literal,
-  TypeVar,
-  NewType )
+  Literal )
+import numpy as np
+from partis.utils.typing import NewType
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-#: A variable size
-N = TypeVar('N', bound = int)
 
-#: A variable size
-M = TypeVar('M', bound = int)
+Where = NewType('Where', Union[slice, np.ndarray[..., np.dtype[Union[np.integer, bool]]]])
+"""Array indexing or boolean mask
+"""
 
-#: A variable number of vertices
-NV = TypeVar('NV', bound = int)
+N = NewType('N', int)
+"""A variable size
+"""
 
-#: A variable number of nodes
-NN = TypeVar('NN', bound = int)
+M = NewType('M', int)
+"""A variable size
+"""
 
-#: A variable number of edges
-NE = TypeVar('NE', bound = int)
+NV = NewType('NV', int)
+"""A variable number of vertices
+"""
 
-#: A variable number of cells
-NC = TypeVar('NC', bound = int)
+NN = NewType('NN', int)
+"""A variable number of nodes
+"""
 
-#: A variable number of processes in MPI.Comm
-NP = TypeVar('NP', bound = int)
+NE = NewType('NE', int)
+"""A variable number of edges
+"""
+
+NC = NewType('NC', int)
+"""A variable number of cells
+"""
+
+NP = NewType('NP', int)
+"""A variable number of processes in MPI.Comm
+"""

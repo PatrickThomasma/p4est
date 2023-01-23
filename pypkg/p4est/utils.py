@@ -1,15 +1,12 @@
 # Enable postponed evaluation of annotations
 from __future__ import annotations
-try:
+from partis.utils import TYPING
+
+if TYPING:
   from typing import (
-    Optional,
     Union,
-    Literal,
-    TypeVar,
-    NewType )
+    Literal)
   from .typing import N, M
-except:
-  pass
 
 from copy import copy
 from collections.abc import Sequence
@@ -84,12 +81,12 @@ class jagged_array(Sequence):
 
   #-----------------------------------------------------------------------------
   @property
-  def flat(self):
+  def flat(self) -> np.ndarray[(N, ...)]:
     return self._data
 
   #-----------------------------------------------------------------------------
   @property
-  def row_idx(self):
+  def row_idx(self) -> np.ndarray[(M,), np.dtype[np.integer]]:
     return self._row_idx
 
   #-----------------------------------------------------------------------------
@@ -99,7 +96,7 @@ class jagged_array(Sequence):
 
   #-----------------------------------------------------------------------------
   @property
-  def dtype(self):
+  def dtype(self) -> np.dtype:
     return self._data.dtype
 
   #-----------------------------------------------------------------------------
@@ -131,37 +128,59 @@ class jagged_array(Sequence):
     self._data[self.row_idx[idx]:self.row_idx[idx+1]] = row_data
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def unique_full(arr, axis):
+def unique_full(
+  arr : np.ndarray[(...,N,...), np.dtype[np.number]],
+  axis : int ) \
+  -> tuple[
+    np.ndarray[(N,), np.dtype[np.integer]],
+    np.ndarray[(N,), np.dtype[bool]],
+    np.ndarray[(M,), np.dtype[np.integer]],
+    np.ndarray[(N,), np.dtype[np.integer]] ]:
   r"""This is a reimplementation of np.unique, but returns the needed intermediate
   arrays needed to construct the outputs, instead of the standard outputs
   (numpy/lib/arraysetops.py).
 
   Parameters
   ----------
-  arr : ndarray of shape[axis] == N
-    Must be a *non-empty* array with numeric dtype
-  axis : int
-    Non-None axis to perform sort
+  arr :
+    Values to sort along given axis.
+  axis :
+    Axis to perform sort, ``arr.shape[axis] == N``
 
   Returns
   -------
-  sort_idx : ndarray of shape = (N,)
+  sort_idx :
     The 'argsort' of the array along given axis, with all other axes collapsed
     to participate in sorting.
-    ``unique_with_repeats = arr[sort_idx]``
-  unique_mask : ndarray of shape = (N,), dtype = bool
+
+    .. code-block:: python
+
+      unique_with_repeats = arr[sort_idx]
+
+  unique_mask :
     Mask of the first occurance of each unique value in the *sorted*
     array along the given axis.
-    ``unique = arr[sort_idx[unique_mask]]``
-  unique_idx : ndarray of shape <= (N+1,)
+
+    .. code-block:: python
+
+      unique = arr[sort_idx[unique_mask]]
+
+  unique_idx :
     Offset to the first occurance of each unique value in the *sorted*
     array along the given axis, plus an additional entry at the end that
     is the total count.
-    ``unique = arr[sort_idx[unique_idx[:-1]]]``
-    ``counts = np.diff(unique_idx)``
-  inv_idx : ndarray of shape = (N,)
+
+    .. code-block:: python
+
+      unique = arr[sort_idx[unique_idx[:-1]]]
+      counts = np.diff(unique_idx)
+
+  inv_idx :
     Indices of sorted unique values to reconstruct the original (unsorted) array.
-    ``np.all(arr == unique[inv_idx])``
+
+    .. code-block:: python
+
+      np.all(arr == unique[inv_idx])
   """
 
   arr = np.moveaxis(arr, axis, 0)
