@@ -488,6 +488,21 @@ cdef extern from "p4est_iterate.h" nogil:
   ctypedef void (*p4est_iter_corner_t) (
     p4est_iter_corner_info_t * info,
     void *user_data )
+  #.............................................................................
+  ctypedef struct p4est_lnodes:  
+  #Strucuter for Lnodes to be used in nodes class
+    sc_MPI_Comm         mpicomm
+    p4est_locidx_t      num_local_nodes
+    p4est_locidx_t      owned_count
+    p4est_gloidx_t      global_offset
+    p4est_gloidx_t     *nonlocal_nodes
+    sc_array_t         *sharers
+    p4est_locidx_t     *global_owned_count
+
+    int                 degree, vnodes
+    p4est_locidx_t      num_local_elements
+    int *face_code
+    p4est_locidx_t     *element_nodes
 
   #.............................................................................
   void p4est_iterate(

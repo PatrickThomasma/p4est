@@ -131,3 +131,18 @@ class QuadGhostInfo(Info):
   origin = InfoField((2,), np.int32)
   """Normalized coordinate of the leaf's origin relative to the root cell.
   """
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+class NodeInfo(Info):
+
+  idx = InfoField(tuple(), np.int32),
+  """ The Index inside of a cell
+  """
+  cells = InfoField((2,2), np.int8),
+  """ Cells that are connected to the node
+  """
+  cells_inv = InfoField((2,2), np.int8)
+  """ Inverse order of cells connected to node
+  """
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
