@@ -6,12 +6,21 @@ if TYPING:
   from typing import (
     Union,
     Literal )
-  from ...typing import N, NP, M, NV, NN, NE, NC, Where
+  from ...typing import (
+    NP,
+    NTX,
+    NRX,
+    NL,
+    NG,
+    NM,
+    NAM,
+    NAF,
+    NAC,
+    Where )
   from .typing import (
     CoordRel,
     CoordAbs)
 
-from collections import namedtuple
 from collections.abc import (
   Iterable,
   Sequence,
@@ -19,11 +28,10 @@ from collections.abc import (
 import numpy as np
 from mpi4py import MPI
 
-from ...utils import jagged_array
-from ...core._info import (
+from ...utils import jagged_array, InfoUpdate
+from .info import (
   HexLocalInfo,
   HexGhostInfo )
-from ...core._adapted import HexAdapted
 from ...core._p8est import P8est
 from .base import HexMesh
 
@@ -76,22 +84,54 @@ class HexAMR(P8est):
 
   #-----------------------------------------------------------------------------
   @property
-  def local(self) -> HexLocalInfo:
+  def local(self) -> HexLocalInfo[NL]:
     """Cells local to the process ``comm.rank``.
     """
     return self._local
 
   #-----------------------------------------------------------------------------
   @property
-  def ghost(self) -> jagged_array[NP, HexGhostInfo]:
+  def ghost(self) -> jagged_array[NP, HexGhostInfo[NG]]:
     """Cells outside the process boundary (*not* local) that neighbor one or more
     local cells, grouped by the rank of the *ghost's* local process.
+
+    Examples
+    --------
+
+    .. code-block:: python
+
+      from mpi4py.util.dtlib import from_numpy_dtype
+
+      # exchange process neighbor information
+      sendbuf = np.ascontiguousarray(local_value[grid.local.idx[grid.mirror.flat]])
+      recvbuf = np.empty((len(grid.ghost.flat),), dtype = local_value.dtype)
+
+      mpi_datatype = from_numpy_dtype(local_value.dtype)
+
+      grid.comm.Alltoallv(
+        sendbuf = [
+          sendbuf, (
+            # counts
+            grid.mirror.row_counts,
+            # displs
+            grid.mirror.row_idx[:-1] ),
+          mpi_datatype ],
+        recvbuf = [
+          recvbuf, (
+            grid.ghost.row_counts,
+            grid.ghost.row_idx[:-1] ),
+          mpi_datatype ])
+
+      value = np.concatenate([local_value, recvbuf])
+
+      value_adj = value[grid.local.cell_adj]
+      d_value = np.abs(local_value[:,None,None,None] - value_adj).max(axis = (1,2,3))
     """
     return self._ghost
 
   #-----------------------------------------------------------------------------
   @property
-  def mirror(self) -> jagged_array[NP, np.ndarray[np.dtype[np.integer]]]:
+  def mirror(self) -> jagged_array[NP, np.ndarray[NM, np.dtype[np.integer]]]:
     """Indicies into ``local`` for cells that touch the parallel boundary
     of each rank.
     """
@@ -124,13 +164,87 @@ class HexAMR(P8est):
       where = where )
 
   #-----------------------------------------------------------------------------
-  def adapt(self) -> tuple[HexAdapted, HexAdapted]:
+  def adapt(self) -> tuple[
+    InfoUpdate[HexLocalInfo[NAM], HexLocalInfo[NAM]],
+    InfoUpdate[HexLocalInfo[NAF,2,2,2], HexLocalInfo[NAF]],
+    InfoUpdate[HexLocalInfo[NAC], HexLocalInfo[NAC,2,2,2]]]:
     """Applies refinement, coarsening, and then balances based on ``local.adapt``.
 
     Returns
     -------
+    moved :
     refined :
     coarsened :
+
+
+    Examples
+    --------
+
+    .. code-block:: python
+
+      moved, refined, coarsened = grid.adapt()
+
+      # update local values that have changed position, refined, or coarsened
+      _local_value = -np.ones(len(grid.local), dtype = local_value.dtype)
+      _local_value[moved.dst.idx] = local_value[moved.src.idx]
+      _local_value[refined.dst.idx] = local_value[refined.src.idx,None,None,None]
+      _local_value[coarsened.dst.idx] = local_value[coarsened.src.idx].mean(axis = (1,2,3))
+      local_value = _local_value
     """
 
-    return super().adapt()
+    return self._adapt()
+
+  #-----------------------------------------------------------------------------
+  def partition(self) -> tuple[
+    jagged_array[NP, HexLocalInfo[NTX]],
+    jagged_array[NP, HexLocalInfo[NRX]]]:
+    """Applies partitioning based on ``local.weight``.
+
+    Returns
+    -------
+    send_to :
+    receive_from :
+
+
+    Examples
+    --------
+
+    .. code-block:: python
+
+      from mpi4py.util.dtlib import from_numpy_dtype
+
+      tx, rx = grid.partition()
+
+      # exchange values that have been moved between ranks
+      sendbuf = np.ascontiguousarray(local_value[tx.flat.idx])
+      recvbuf = np.empty((len(rx.flat),), dtype = local_value.dtype)
+
+      mpi_datatype = from_numpy_dtype(local_value.dtype)
+
+      grid.comm.Alltoallv(
+        sendbuf = [
+          sendbuf, (
+            # counts
+            tx.row_counts,
+            # displs
+            tx.row_idx[:-1] ),
+          mpi_datatype ],
+        recvbuf = [
+          recvbuf, (
+            rx.row_counts,
+            rx.row_idx[:-1] ),
+          mpi_datatype ])
+
+      # handle elements that only moved on local rank
+      tx0 = tx.row_idx[grid.comm.rank]
+      tx1 = tx.row_idx[grid.comm.rank+1]
+
+      rx0 = rx.row_idx[grid.comm.rank]
+      rx1 = rx.row_idx[grid.comm.rank+1]
+
+      recvbuf[rx0:rx1] = sendbuf[tx0:tx1]
+
+      local_value = recvbuf
+    """
+
+    return self._partition()

@@ -224,8 +224,9 @@ if target_pypkg
 
 
   cython_args = [
-    '-3',
-    '--fast-fail' ]
+    '--3str',
+    '--fast-fail',
+    '-X embedsignature=True' ]
 
   if get_option('profile')
     cython_args += ['-X profile=True', '-X linetrace=True', '-X binding=True']

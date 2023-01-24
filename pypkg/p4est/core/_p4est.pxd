@@ -4,9 +4,6 @@ from p4est.core._sc cimport (
   sc_MPI_Comm,
   sc_array_t,
   sc_mempool_t )
-from p4est.core._info cimport (
-  QuadLocalInfo,
-  QuadGhostInfo )
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # NOTE: Some important definitions are not in p4est.h
@@ -314,6 +311,12 @@ cdef extern from "p4est_extended.h" nogil:
     p4est_init_t init_fn,
     void* user_pointer )
 
+  #-----------------------------------------------------------------------------
+  # Make a deep copy of a p4est
+  p4est_t* p4est_copy(
+    p4est_t* input,
+    int copy_data )
+
   #.............................................................................
   void p4est_destroy(p4est_t* p4est)
 
@@ -322,10 +325,6 @@ cdef extern from "p4est_extended.h" nogil:
     p4est_t* p4est,
     p4est_connect_type_t btype)
 
-  #.............................................................................
-  p4est_nodes_t* p4est_nodes_new (
-    p4est_t * p4est, 
-    p4est_ghost_t * ghost)
   #.............................................................................
   void p4est_ghost_destroy(
     p4est_ghost_t* ghost)
@@ -340,6 +339,14 @@ cdef extern from "p4est_extended.h" nogil:
 
   #.............................................................................
   void p4est_mesh_destroy(p4est_mesh_t * mesh)
+
+  #.............................................................................
+  p4est_nodes_t* p4est_nodes_new (
+    p4est_t * p4est,
+    p4est_ghost_t * ghost)
+
+  #.............................................................................
+  void p4est_nodes_destroy(p4est_nodes_t*)
 
   #.............................................................................
   void p4est_refine_ext(
@@ -387,6 +394,7 @@ cdef extern from "p4est_extended.h" nogil:
     p4est_t * p4est,
     int allow_for_coarsening,
     p4est_weight_t weight_fn )
+
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef extern from "p4est_nodes.h" nogil:
   #.............................................................................
@@ -492,6 +500,7 @@ cdef extern from "p4est_iterate.h" nogil:
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ctypedef struct aux_quadrant_data_t:
+  np.npy_int32 rank
   np.npy_int32 idx
   np.npy_int8 adapt
   np.npy_int32 weight
@@ -503,27 +512,44 @@ ctypedef struct aux_quadrant_data_t:
   np.npy_int32 replaced_idx[4]
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+cdef class P4estConnectivity:
+  cdef vertices
+  cdef tree_to_vertex
+  cdef tree_to_tree
+  cdef tree_to_face
+  cdef tree_to_corner
+
+  cdef ctt_offset
+  cdef corner_to_tree
+  cdef corner_to_corner
+
+  cdef p4est_connectivity_t _cdata
+
+  #-----------------------------------------------------------------------------
+  cdef _init(P4estConnectivity self)
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 cdef class P4est:
 
   cdef public _mesh
   cdef public _comm
   cdef public np.npy_int8 _max_level
 
-  cdef public QuadLocalInfo _local
+  cdef public _local
   cdef public _ghost
   cdef public _mirror
 
-  cdef p4est_connectivity_t _connectivity
+  cdef P4estConnectivity _connectivity
   cdef p4est_t* _p4est
 
   #-----------------------------------------------------------------------------
   cdef _init(P4est self)
 
-  #-----------------------------------------------------------------------------
-  cdef void _adapt(P4est self) nogil
+  # #-----------------------------------------------------------------------------
+  # cdef void _adapt(P4est self) nogil
 
-  #-----------------------------------------------------------------------------
-  cdef void _partition(P4est self) nogil
+  # #-----------------------------------------------------------------------------
+  # cdef void _partition(P4est self) nogil
 
   #-----------------------------------------------------------------------------
   cdef _sync_info(P4est self)
